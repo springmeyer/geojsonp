@@ -15,7 +15,7 @@ geometry_types = ('Point',
                   'GeometryCollection',
                  )
 
-def e6(x): return int(x * 1000)
+def e6(x): return int(x * 1e6)
 
 def encode_geometry(geometry, geom):
     gt = geometry['type']
