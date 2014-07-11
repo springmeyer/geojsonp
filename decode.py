@@ -71,4 +71,4 @@ if __name__ == "__main__":
     message = geojson_pb2.object()
     message.ParseFromString(data)
     print message
-    #decode(message) 
+    decode(message)

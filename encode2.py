@@ -4,7 +4,7 @@
 import sys
 import json
 import struct
-import geojson_pb2
+import geojson2_pb2 as geojson_pb2
 
 geometry_types = ('Point',
                   'MultiPoint',
@@ -15,40 +15,40 @@ geometry_types = ('Point',
                   'GeometryCollection',
                  )
 
-def encode_geometry(geometry,geom):
-    geom.type = geometry['type']
+def e6(x): return int(x * 1000)
+
+def encode_geometry(geometry, geom):
+    gt = geometry['type']
+    geom.type = geojson_pb2.object.Type.Value(gt.upper())
     json_coords = geometry.get('coordinates')
     if json_coords and len(json_coords) > 0:
-        if geom.type == 'Point':
-            geom.point.x = json_coords[0]
-            geom.point.y = json_coords[1]
-        elif geom.type in ('MultiPoint','LineString'):
+        if gt == 'Point':
+            array = geom.coord_array.add()
+            array.coords.append(e6(json_coords[0]))
+            array.coords.append(e6(json_coords[1]))
+        elif gt in ('MultiPoint','LineString'):
             array = geom.coord_array.add()
             for points in json_coords:
-                point = array.points.add()
-                point.x = points[0]
-                point.y = points[1]
-        elif geom.type in ('MultiLineString','Polygon'):
+                array.coords.append(e6(points[0]))
+                array.coords.append(e6(points[1]))
+        elif gt in ('MultiLineString','Polygon'):
             multi_array = geom.multi_array.add()
             for seq in json_coords:
                 array = multi_array.arrays.add()
                 for points in seq:
-                    point = array.points.add()
-                    point.x = points[0]
-                    point.y = points[1]
-        elif geom.type in ('MultiPolygon'):
+                    array.coords.append(e6(points[0]))
+                    array.coords.append(e6(points[1]))
+        elif gt in ('MultiPolygon'):
             for seq1 in json_coords:
                 multi_array = geom.multi_array.add()
                 for seq in seq1:
                     array = multi_array.arrays.add()
                     for points in seq:
-                        point = array.points.add()
-                        point.x = points[0]
-                        point.y = points[1]
+                        array.coords.append(e6(points[0]));
+                        array.coords.append(e6(points[1]));
 
 def encode_feature(message,feature):
     feat = message.features.add()
-    feat.type = feature['type']
     geometry = feature.get('geometry')
     if geometry:
         geom_type = geometry['type']
@@ -66,7 +66,7 @@ def encode_feature(message,feature):
         prop = feat.properties.add()
         prop.key = _property
         val = props[_property]
-        if isinstance(val,unicode):
+        if isinstance(val, unicode):
             prop.value.string_value = val
         elif isinstance(val,float):
             prop.value.double_value = val
@@ -97,7 +97,8 @@ def encode(obj):
         else:
             geom = message.geometries.add()
             encode_geometry(obj,geom)
-    print "%d,%d" % (len(json.dumps(obj)), len(message.SerializeToString()))
+    protolen = len(message.SerializeToString())
+    print "%d" % (protolen)
     open('message.pbf','wb').write(message.SerializeToString())
 
 if __name__ == "__main__":
